@@ -115,8 +115,8 @@ class AssetSource(ClosableResource):
                        for k, v in self._assets.items()])
 
     def get_category_id(x):
-      if x['category'] in self.categories:
-        return self.categories.index(x['category'])
+      if x['category'] in self.categories():
+        return self.categories().index(x['category'])
       else:
         return np.nan
 
@@ -192,7 +192,7 @@ class AssetSource(ClosableResource):
     # find corresponding asset entry
     asset_entry = self._assets.get(asset_id)
     if not asset_entry:
-      close_matches = difflib.get_close_matches(asset_id, possibilities=self.all_asset_ids, n=1)
+      close_matches = difflib.get_close_matches(asset_id, possibilities=self.all_asset_ids(), n=1)
       if close_matches:
         raise KeyError(f"Unknown asset with id='{asset_id}'. Did you mean '{close_matches[0]}'?")
 
@@ -253,7 +253,7 @@ class AssetSource(ClosableResource):
       test_ids: list of asset ID strings
     """
     rng = np.random.default_rng(42)
-    test_size = int(round(len(self.all_asset_ids) * fraction))
-    test_ids = rng.choice(self.all_asset_ids, size=test_size, replace=False)
-    train_ids = [i for i in self.all_asset_ids if i not in test_ids]
+    test_size = int(round(len(self.all_asset_ids()) * fraction))
+    test_ids = rng.choice(self.all_asset_ids(), size=test_size, replace=False)
+    train_ids = [i for i in self.all_asset_ids() if i not in test_ids]
     return train_ids, test_ids
