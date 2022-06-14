@@ -187,9 +187,12 @@ def process_collisions(collisions, scene, assets_subset=None):
   assets_subset = scene.foreground_assets if assets_subset is None else assets_subset
 
   def get_obj_index(obj):
+    if obj.name == 'dome':
+      return -1
     try:
       return assets_subset.index(obj)
     except ValueError:
+      # BVH: Why does ValueError ever happen?
       return -1
 
   return [{
