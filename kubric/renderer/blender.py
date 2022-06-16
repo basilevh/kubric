@@ -352,12 +352,19 @@ class Blender(core.View):
   def clear_and_reset_blender_scene(verbose: bool = False, custom_scene: str = None):
     """ Resets Blender to an entirely empty scene (or a custom one)."""
     with RedirectStream(stream=sys.stdout, disabled=verbose):
+      
+      # BVH MOD
+      # This call crashes except in main thread ??
+      # terminate called after throwing an instance of 'std::system_error'
+      # what():  Invalid argument
       bpy.ops.wm.read_factory_settings(use_empty=True)
+      
       if custom_scene is None:
         bpy.context.scene.world = bpy.data.worlds.new("World")
       else:
         logger.info("Loading scene from '%s'", custom_scene)
         bpy.ops.wm.open_mainfile(filepath=custom_scene)
+    pass
 
   @singledispatchmethod
   def add_asset(self, asset: core.Asset) -> Any:
