@@ -187,6 +187,9 @@ def process_collisions(collisions, scene, assets_subset=None):
   assets_subset = scene.foreground_assets if assets_subset is None else assets_subset
 
   def get_obj_index(obj):
+    if obj is None:
+      # BVH: Why does this happen? (only in experimental so far)
+      return -2
     if obj.name == 'dome':
       return -1
     try:
