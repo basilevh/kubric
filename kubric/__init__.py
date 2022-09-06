@@ -81,6 +81,10 @@ from kubric.file_io import write_image_dict
 from kubric.file_io import read_png
 from kubric.file_io import read_tiff
 
+# BVH MOD
+from kubric.file_io import write_segmentation_batch
+from kubric.file_io import write_divided_segmentation_batch
+
 from kubric.utils import ArgumentParser
 from kubric.utils import done
 from kubric.utils import get_camera_info
