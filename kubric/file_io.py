@@ -294,7 +294,7 @@ def write_segmentation_batch(data, directory, file_template="segmentation_{:05d}
 
 
 def write_divided_segmentation_batch(
-        data, directory, file_template="divided_segmentation_{{:05d}}_{:03d}.png",
+        data, directory, file_template="divided_segmentation_{:03d}_{{:05d}}.png",
         max_write_threads=16):
     # NOTE: Double braces in above str means that we format that part later.
     K = data.shape[-1]
