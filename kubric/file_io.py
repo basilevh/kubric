@@ -128,7 +128,7 @@ def write_png(data: np.array, filename: PathLike) -> None:
     # see https://pypng.readthedocs.io/en/latest/ex.html#reshaping
     data = data.reshape(height, -1)
     with gopen(filename, "wb") as fp:
-        w.write(fp, data)
+        w.write(fp, data.copy())  # BVH MOD: add copy() for uint8 problems.
 
 
 def write_palette_png(data: np.array, filename: PathLike,
@@ -293,21 +293,6 @@ def write_segmentation_batch(data, directory, file_template="segmentation_{:05d}
                       max_write_threads=max_write_threads, palette=palette)
 
 
-def write_divided_segmentation_batch(
-        data, directory, file_template="divided_segmentation_{:03d}_{{:05d}}.png",
-        max_write_threads=16):
-    # NOTE: Double braces in above str means that we format that part later.
-    K = data.shape[-1]
-    assert data.ndim == 4 and data.shape[-1] > 1, data.shape
-    assert data.dtype in [np.uint8, np.uint16, np.uint32, np.uint64], data.dtype
-    path_template = str(as_path(directory) / file_template)
-    palette = plotting.hls_palette(np.max(data) + 1)
-    for k in range(K):
-        cur_path_template = path_template.format(k)
-        multi_write_image(data[..., k:k + 1], cur_path_template, write_fn=write_palette_png,
-                          max_write_threads=max_write_threads, palette=palette)
-
-
 def write_flow_batch(data, directory, file_template="flow_{:05d}.png", name="flow",
                      max_write_threads=16, range_file="data_ranges.json"):
     assert data.ndim == 4 and data.shape[-1] == 2, data.shape
@@ -351,10 +336,75 @@ DEFAULT_WRITERS = {
 
 
 def write_image_dict(data_dict: Dict[str, np.ndarray], directory: PathLike,
-                     file_templates: Dict[str, str] = (), max_write_threads=16):
+                     file_templates: Dict[str, str] = (), max_write_threads=16,
+                     is_divided: bool = False):
     for key, data in data_dict.items():
+        cur_writer = DEFAULT_DIVIDED_WRITERS[key] if is_divided else DEFAULT_WRITERS[key]
         if key in file_templates:
-            DEFAULT_WRITERS[key](data, directory, file_template=file_templates[key],
-                                 max_write_threads=max_write_threads)
+            cur_writer(data, directory, file_template=file_templates[key],
+                       max_write_threads=max_write_threads)
         else:
-            DEFAULT_WRITERS[key](data, directory, max_write_threads=max_write_threads)
+            cur_writer(data, directory, max_write_threads=max_write_threads)
+
+
+# =======
+# BVH MOD
+# =======
+
+def write_divided_rgb_batch(
+        data, directory, file_template="divided_rgb_{:03d}_{{:05d}}.png",
+        max_write_threads=16):
+    K = data.shape[-1]
+    assert data.ndim == 5 and data.shape[-2] == 3 and data.shape[-1] > 1, data.shape
+    path_template = str(as_path(directory) / file_template)
+    for k in range(K):
+        cur_path_template = path_template.format(k)
+        multi_write_image(data[..., k], cur_path_template, write_fn=write_png,
+                          max_write_threads=max_write_threads)
+
+
+def write_divided_rgba_batch(
+        data, directory, file_template="divided_rgba_{:03d}_{{:05d}}.png",
+        max_write_threads=16):
+    K = data.shape[-1]
+    assert data.ndim == 5 and data.shape[-2] == 4 and data.shape[-1] > 1, data.shape
+    path_template = str(as_path(directory) / file_template)
+    for k in range(K):
+        cur_path_template = path_template.format(k)
+        multi_write_image(data[..., k], cur_path_template, write_fn=write_png,
+                          max_write_threads=max_write_threads)
+
+
+def write_divided_depth_batch(
+        data, directory, file_template="divided_depth_{:03d}_{{:05d}}.tiff",
+        max_write_threads=16):
+    K = data.shape[-1]
+    assert data.ndim == 5 and data.shape[-2] == 1 and data.shape[-1] > 1, data.shape
+    path_template = str(as_path(directory) / file_template)
+    for k in range(K):
+        cur_path_template = path_template.format(k)
+        multi_write_image(data[..., k], cur_path_template, write_fn=write_tiff,
+                          max_write_threads=max_write_threads)
+
+
+def write_divided_segmentation_batch(
+        data, directory, file_template="divided_segmentation_{:03d}_{{:05d}}.png",
+        max_write_threads=16):
+    # NOTE: Double braces in above str means that we format that part later.
+    K = data.shape[-1]
+    assert data.ndim == 5 and data.shape[-2] == 1 and data.shape[-1] > 1, data.shape
+    assert data.dtype in [np.uint8, np.uint16, np.uint32, np.uint64], data.dtype
+    path_template = str(as_path(directory) / file_template)
+    palette = plotting.hls_palette(np.max(data) + 1)
+    for k in range(K):
+        cur_path_template = path_template.format(k)
+        multi_write_image(data[..., k], cur_path_template, write_fn=write_palette_png,
+                          max_write_threads=max_write_threads, palette=palette)
+
+
+DEFAULT_DIVIDED_WRITERS = {
+    "rgb": write_divided_rgb_batch,
+    "rgba": write_divided_rgba_batch,
+    "depth": write_divided_depth_batch,
+    "segmentation": write_divided_segmentation_batch,
+}
